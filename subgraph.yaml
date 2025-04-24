@@ -1,0 +1,35 @@
+specVersion: 0.0.4
+description: FAssets Test
+repository: https://github.com/poap-xyz/poap-mainnet-subgraph
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: AssetManager
+    network: coston
+    source:
+      address: '0x56728e46908fB6FcC5BCD2cc0c0F9BB91C3e4D34'
+      abi: AssetManager
+      # startBlock: 35590125
+      # startBlock: 35590519
+      startBlock: 35777885
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - CollateralReservedEvent
+        - FAssetEvent
+      abis:
+        - name: AssetManager
+          file: ./abis/AssetManager.json
+      eventHandlers:
+        - event: MintingExecuted(indexed address,indexed uint256,uint256,uint256,uint256)
+          handler: handleMintingExecuted
+        - event: CollateralReserved(indexed address,indexed address,indexed uint256,uint256,uint256,uint256,uint256,uint256,string,bytes32,address,uint256)
+          handler: handleCollateralReserved
+        - event: RedemptionPerformed(indexed address,indexed address,indexed uint64,bytes32,uint256,int256)
+          handler: handleRedemptionPerformed
+        - event: RedemptionDefault(indexed address,indexed address,indexed uint64,uint256,uint256,uint256)
+          handler: handleRedemptionDefault
+      file: ./src/mapping.ts

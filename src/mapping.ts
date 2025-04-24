@@ -1,107 +1,90 @@
-import {
-  ethereum, BigInt
-} from '@graphprotocol/graph-ts'
+import { BigInt, log } from '@graphprotocol/graph-ts';
 
-import {
-  EventToken as EventTokenEvent,
-  Transfer   as TransferEvent,
-} from '../generated/Poap/Poap'
+import { CollateralReserved, MintingExecuted, RedemptionPerformed, RedemptionDefault } from '../generated/AssetManager/AssetManager';
 
-import {
-  Token,
-  Account,
-  Event,
-  Transfer,
-} from '../generated/schema'
+import { CollateralReservedEvent, FAssetEvent } from '../generated/schema';
 
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
+export function handleCollateralReserved(ev: CollateralReserved): void {
+  let event = new CollateralReservedEvent(ev.params.collateralReservationId.toString());
 
-function createEventID(event: ethereum.Event): string
-{
-  return event.block.number.toString().concat('-').concat(event.logIndex.toString());
-}
+  event.txHash = ev.transaction.hash.toHexString();
+  event.minter = ev.transaction.from.toHexString();
 
-export function handleEventToken(ev: EventTokenEvent): void
-{
-  let event = Event.load(ev.params.eventId.toString());
-  // This handler always run after the transfer handler
-  let token = Token.load(ev.params.tokenId.toString())!;
-  if (event == null) {
-    event               = new Event(ev.params.eventId.toString());
-    event.tokenCount    = BigInt.fromI32(0);
-    event.tokenMints    = BigInt.fromI32(0);
-    event.transferCount = BigInt.fromI32(0);
-    event.created       = ev.block.timestamp
-  }
+  log.info('[FAsset] Saving CollateralReservedEvent with id: {}, minter: {}, txHash: {}', [event.id, event.minter, event.txHash]);
 
-  event.tokenCount    += BigInt.fromI32(1);
-  event.tokenMints    += BigInt.fromI32(1);
-  event.transferCount += BigInt.fromI32(1);
-  token.event         = event.id;
-  token.mintOrder     = event.tokenMints;
   event.save();
-  token.save();
 }
 
-export function handleTransfer(ev: TransferEvent): void {
-  let token    = Token.load(ev.params.tokenId.toString());
-  let from     = Account.load(ev.params.from.toHex());
-  let to       = Account.load(ev.params.to.toHex());
-  let transfer = new Transfer(createEventID(ev));
+export function handleMintingExecuted(ev: MintingExecuted): void {
+  let collateralEvent = CollateralReservedEvent.load(ev.params.collateralReservationId.toString());
 
-  if (from == null) {
-    from              = new Account(ev.params.from.toHex());
-    // The from account at least has to own one token
-    from.tokensOwned  = BigInt.fromI32(1);
-  }
-  // Don't subtracts from the ZERO_ADDRESS (it's the one that mint the token)
-  // Avoid negative values
-  if(from.id != ZERO_ADDRESS) {
-    from.tokensOwned -= BigInt.fromI32(1);
-  }
-  from.save();
+  // Create FAssetEvent with transaction hash as id
+  let event = new FAssetEvent(ev.transaction.hash.toHexString());
 
-  if (to == null) {
-    to              = new Account(ev.params.to.toHex());
-    to.tokensOwned  = BigInt.fromI32(0);
-  }
-  to.tokensOwned += BigInt.fromI32(1);
-  to.save();
-
-  if (token == null) {
-    token               = new Token(ev.params.tokenId.toString());
-    token.transferCount = BigInt.fromI32(0);
-    token.created       = ev.block.timestamp
-  }
-  token.owner = to.id;
-  token.transferCount += BigInt.fromI32(1);
-  token.save();
-
-
-  if (token.event != null) {
-    let event = Event.load(token.event as string);
-
-    if(event != null) {
-      // Add one transfer
-      event.transferCount += BigInt.fromI32(1);
-  
-      // Burning the token
-      if(to.id == ZERO_ADDRESS) {
-        event.tokenCount    -= BigInt.fromI32(1);
-        // Subtract all the transfers from the burned token
-        event.transferCount -= token.transferCount;
-      }
-      event.save();
-    }
+  if (collateralEvent) {
+    event.user = collateralEvent.minter;
+    log.info('[FAsset] Found CollateralReservedEvent for id: {}, minter: {}', [ev.params.collateralReservationId.toString(), collateralEvent.minter]);
+  } else {
+    log.warning('[FAsset] CollateralReservedEvent not found for id: {}', [ev.params.collateralReservationId.toString()]);
+    event.user = ZERO_ADDRESS;
   }
 
-  
+  event.type = 'mint';
+  event.status = 'MintingExecuted';
+  event.collateralReservationId = ev.params.collateralReservationId;
+  event.created = ev.block.timestamp;
+  event.updated = ev.block.timestamp;
 
-  transfer.token       = token.id;
-  transfer.from        = from.id;
-  transfer.to          = to.id;
-  transfer.transaction = ev.transaction.hash;
-  transfer.timestamp   = ev.block.timestamp;
-  transfer.save();
+  log.info('[FAsset] Saving FAssetEvent with id: {}, user: {}, type: {}, status: {}', [event.id, event.user, event.type, event.status]);
+
+  event.save();
+}
+
+export function handleRedemptionPerformed(ev: RedemptionPerformed): void {
+  // Create FAssetEvent with transaction hash as id
+  let event = new FAssetEvent(ev.transaction.hash.toHexString());
+
+  // Set the user to the redeemer address
+  event.user = ev.params.redeemer.toHexString();
+
+  event.type = 'redeem';
+  event.status = 'RedemptionPerformed';
+
+  // Convert uint64 requestId to BigInt
+  let requestIdBigInt = BigInt.fromI32(0);
+  requestIdBigInt = BigInt.fromString(ev.params.requestId.toString());
+  event.redeemRequestId = requestIdBigInt;
+
+  event.redeemUnderlyingTxHash = ev.params.transactionHash.toHexString();
+  event.created = ev.block.timestamp;
+  event.updated = ev.block.timestamp;
+
+  log.info('[FAsset] Saving RedemptionPerformed FAssetEvent with id: {}, user: {}, requestId: {}', [event.id, event.user, requestIdBigInt.toString()]);
+
+  event.save();
+}
+
+export function handleRedemptionDefault(ev: RedemptionDefault): void {
+  // Create FAssetEvent with transaction hash as id
+  let event = new FAssetEvent(ev.transaction.hash.toHexString());
+
+  // Set the user to the redeemer address
+  event.user = ev.params.redeemer.toHexString();
+
+  event.type = 'redeem';
+  event.status = 'RedemptionDefault';
+
+  // Convert uint64 requestId to BigInt
+  let requestIdBigInt = BigInt.fromI32(0);
+  requestIdBigInt = BigInt.fromString(ev.params.requestId.toString());
+  event.redeemRequestId = requestIdBigInt;
+
+  event.created = ev.block.timestamp;
+  event.updated = ev.block.timestamp;
+
+  log.info('[FAsset] Saving RedemptionDefault FAssetEvent with id: {}, user: {}, requestId: {}', [event.id, event.user, requestIdBigInt.toString()]);
+
+  event.save();
 }
