@@ -27,7 +27,7 @@ dataSources:
           handler: handleMintingExecuted
         - event: CollateralReserved(indexed address,indexed address,indexed uint256,uint256,uint256,uint256,uint256,uint256,string,bytes32,address,uint256)
           handler: handleCollateralReserved
-        - event: RedemptionPerformed(indexed address,indexed address,indexed uint64,bytes32,uint256,int256)
+        - event: RedemptionPerformed(indexed address,indexed address,indexed uint256,bytes32,uint256,int256)
           handler: handleRedemptionPerformed
         - event: RedemptionDefault(indexed address,indexed address,indexed uint64,uint256,uint256,uint256)
           handler: handleRedemptionDefault

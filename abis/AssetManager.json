@@ -1182,9 +1182,9 @@
             },
             {
                 "indexed": true,
-                "internalType": "uint64",
+                "internalType": "uint256",
                 "name": "requestId",
-                "type": "uint64"
+                "type": "uint256"
             },
             {
                 "indexed": false,
@@ -5462,11 +5462,6 @@
                 "internalType": "address payable",
                 "name": "_executor",
                 "type": "address"
-            },
-            {
-                "internalType": "string[]",
-                "name": "_minterUnderlyingAddresses",
-                "type": "string[]"
             }
         ],
         "name": "reserveCollateral",
