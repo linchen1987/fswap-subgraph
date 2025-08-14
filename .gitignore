@@ -64,3 +64,5 @@ typings/
 
 build
 generated
+
+docker-subgraph/.data

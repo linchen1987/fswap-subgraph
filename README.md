@@ -1,71 +1,37 @@
-# POAP Subgraph
+# FAsset Subgraph
 
-This Subgraph sources events from the POAP contract in different networks. It has been forked from [the original](https://github.com/poap-xyz/poap-subgraph) to demonstrate uses on Goldsky.
+## Deploy Subgraph to Local
 
-## Deploying the subgraph:
+### Prepare and Deploy Your Subgraph
 
-**First time only**
-```ssh
-yarn install
+Modify `subgraph.yaml`: Ensure the `dataSources.network` field matches the `<network-name>` you set in the `ethereum` environment variable in `docker-compose.yml` (e.g., `mainnet` or `dev`).
+
+Modify `dataSources.source.address` to point to the correct contract address.
+
+Generate code and build:
+```bash
+graph codegen # Generate AssemblyScript types from schema.graphql
+graph build   # Compile Subgraph to Wasm
 ```
 
-Available networks: mainnet, xdai, chiado, goerli
+Create a Subgraph instance on your local Graph Node:
 
-**Chiado deployment**
+- `<subgraph-name>`: The name you want to give your Subgraph, usually in the format `your-github-account/your-subgraph-name`.
+- `--node`: Points to the management API endpoint of your local Graph Node (configured as 8020 in `docker-compose.yml`).
 
-Chiado is not index by The Graph so we use Goldsky
+```bash
+graph create --node http://127.0.0.1:8020/ <subgraph-name>
 
-First run:
-
-```ssh
-goldsky login
+# e.g. graph create --node http://127.0.0.1:8020/ fasset-test
 ```
 
-If you already have an existing Chiado subgraph you will have to delete it to deploy the new one
+### Deploy Subgraph to Local Node
+- `--ipfs`: Points to the API endpoint of your local IPFS node (configured as 5001 in `docker-compose.yml`).
+- `--node`: Also points to the management API endpoint of your local Graph Node (8020).
 
-**Deploy** 
-
-```
---product hosted-service --access-token {TOKEN} 
-```
-as extra parameters just after "graph deploy" in the package json and then execute the following:
-
-```ssh
-yarn prepare:<network>
-yarn codegen
-yarn build
-yarn deploy:<network>
+```bash
+graph deploy --node http://127.0.0.1:8020/ --ipfs http://127.0.0.1:5001/ <subgraph-name>
+# e.g. graph deploy --node http://127.0.0.1:8020 --ipfs http://127.0.0.1:5001 fasset-test
 ```
 
-**Good practices**
-A good practice to deploy in mainnet or xdai is to have a duplicate/backup subgraph so that if something goes wrong, the traffic can be redirected to the duplicate subgraph instead of having to wait for the subgraph to re-deploy/rollback to a previous version. In Xdai/Gnosis it can take at least 2 days to sync.
-
-To build a duplicate, you need to create a new subgraph through the-graph profile. Once the new path is provided you can use the next curl to deploy a duplicate WITHOUT NEEDING to resync all over again just by copying the ID of the subgraph you are trying to duplicate.
-
-```ssh
-curl -H "content-type: application/json" -H "authorization: Bearer {TOKEN}" --data '{"jsonrpc": "2.0", "method": "subgraph_deploy", "params": { "name": "poap-xyz/{duplicate_subgraph_path}", "ipfs_hash": "{ID_HASH_FOUND_IN_THE_ORIGINAL_SUBGRAPH}"}, "id": "1"}' https://api.thegraph.com/deploy/
-```
-
-## Deployments
-
-### Mainnet
-Endpoint: [https://api.thegraph.com/subgraphs/name/poap-xyz/poap](https://api.thegraph.com/subgraphs/name/poap-xyz/poap) \
-Subgraph page: [https://thegraph.com/explorer/subgraph/poap-xyz/poap](https://thegraph.com/explorer/subgraph/poap-xyz/poap)
-
-### XDai
-Endpoint: [https://api.thegraph.com/subgraphs/name/poap-xyz/poap-xdai](https://api.thegraph.com/subgraphs/name/poap-xyz/poap-xdai) \
-Subgraph page: [https://thegraph.com/explorer/subgraph/poap-xyz/poap-xdai](https://thegraph.com/explorer/subgraph/poap-xyz/poap-xdai)
-
-
-### Chiado
-Endpoint: [https://api.goldsky.com/api/public/project_clcquosqr8v0k0iwk5rs87x2l/subgraphs/poap-xyz/poap-chiado/gn](https://api.goldsky.com/api/public/project_clcquosqr8v0k0iwk5rs87x2l/subgraphs/poap-xyz/poap-chiado/gn) \
-Subgraph page: [https://api.goldsky.com/api/public/project_clcquosqr8v0k0iwk5rs87x2l/subgraphs/poap-xyz/poap-chiado/gn](https://api.goldsky.com/api/public/project_clcquosqr8v0k0iwk5rs87x2l/subgraphs/poap-xyz/poap-chiado/gn) 
-
-### Goerli
-Endpoint: [https://api.thegraph.com/subgraphs/name/poap-xyz/poap-goerli](https://api.thegraph.com/subgraphs/name/poap-xyz/poap-goerli) \
-Subgraph page: [https://thegraph.com/hosted-service/subgraph/poap-xyz/poap-goerli](https://thegraph.com/hosted-service/subgraph/poap-xyz/poap-goerli)
-
-## Notes
-
-### Sokol
-Previously none of the params of EventToken was indexed, due to a change in the ABI, newer events now have one of the params indexed and this may cause some issues with the-graph having to deal with malformed or missing entities for older tokens.
+The deploy command uploads Subgraph files to local IPFS, then instructs the local Graph Node to start indexing.

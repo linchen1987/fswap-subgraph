@@ -1,7 +1,3 @@
-# export const MintingExecutedEventName = 'MintingExecuted';
-# export const RedemptionPerformedEventName = 'RedemptionPerformed';
-# export const RedemptionDefaultEventName = 'RedemptionDefault';
-
 type CollateralReservedEvent @entity(immutable: true) {
   # id is the collateralReservationId
   id: ID!

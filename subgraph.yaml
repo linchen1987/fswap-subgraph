@@ -6,13 +6,12 @@ schema:
 dataSources:
   - kind: ethereum/contract
     name: AssetManager
-    network: coston
+    network: coston2
     source:
-      address: '0x56728e46908fB6FcC5BCD2cc0c0F9BB91C3e4D34'
+      # address: '0x56728e46908fB6FcC5BCD2cc0c0F9BB91C3e4D34'
+      address: '0xDeD50DA9C3492Bee44560a4B35cFe0e778F41eC5'
       abi: AssetManager
-      # startBlock: 35590125
-      # startBlock: 35590519
-      startBlock: 35777885
+      startBlock: 20841850
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
