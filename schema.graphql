@@ -11,7 +11,7 @@ type FAssetEvent @entity(immutable: true) {
   user: String!
   # mint, redeem
   type: String!
-  # MintingExecuted, RedemptionPerformed, RedemptionDefault
+  # MintingExecuted, RedemptionPerformed, RedemptionDefault, RedemptionPaymentBlocked, RedemptionRejected
   status: String!
   collateralReservationId: BigInt
   redeemRequestId: BigInt

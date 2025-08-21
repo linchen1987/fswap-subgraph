@@ -1,0 +1,58 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:14 # You can choose an appropriate PostgreSQL version
+    container_name: local_postgres
+    volumes:
+      - ./.data/postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: graph-node
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: graph-node
+      # LC_ALL: C
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
+    restart: unless-stopped
+
+  ipfs:
+    image: ipfs/go-ipfs:v0.12.0 # Choose an appropriate IPFS version
+    container_name: local_ipfs
+    volumes:
+      - ./.data/ipfs_data:/data/ipfs
+    ports:
+      - '5001:5001' # API
+      - '8080:8080' # Gateway
+    restart: unless-stopped
+
+  # Graph Node
+  graph-node:
+    image: graphprotocol/graph-node:latest # Or specify a stable version, e.g. v0.30.0
+    container_name: local_graph_node
+    ports:
+      - '8000:8000' # GraphQL HTTP query port
+      - '8001:8001' # GraphQL WS query port (if needed)
+      - '8020:8020' # JSON RPC management port (for deployment)
+      - '8030:8030' # Prometheus metrics port (optional)
+      - '8040:8040' # Subgraph metadata port (optional)
+    depends_on:
+      - postgres
+      - ipfs
+    environment:
+      postgres_host: postgres # Docker Compose service name
+      postgres_user: graph-node
+      postgres_pass: password # Must match the password set above
+      postgres_db: graph-node
+      ipfs: 'ipfs:5001' # Docker Compose service name and API port
+      # Important: Set the Ethereum node RPC address
+      # If you are running Ganache on your host (default http://127.0.0.1:8545)
+      # Use host.docker.internal to allow the container to access host services (Docker Desktop on Mac/Win)
+      # For Linux, you may need to use '172.17.0.1' (default Docker bridge IP) or set up a custom network
+      # ethereum: 'mainnet:http://host.docker.internal:8545' # 'mainnet' is the network name, can be customized
+      # ethereum: 'coston:https://coston-api.flare.network/ext/C/rpc' # 'mainnet' is the network name, can be customized
+      ethereum: 'coston2:https://coston2-api.flare.network/ext/C/rpc' # 'mainnet' is the network name, can be customized
+      # If using Hardhat Node, similarly point to its RPC address
+      # ethereum: 'dev:http://host.docker.internal:8545'
+      # You can add multiple networks, separated by commas, for example:
+      # ethereum: 'mainnet:http://host.docker.internal:8545,goerli:https://goerli.infura.io/v3/YOUR_INFURA_ID'
+    volumes:
+      - ./.data/graph_node_data:/var/lib/graph-node/data
+    restart: unless-stopped

@@ -1,6 +1,6 @@
 import { BigInt, log } from '@graphprotocol/graph-ts';
 
-import { CollateralReserved, MintingExecuted, RedemptionPerformed, RedemptionDefault } from '../generated/AssetManager/AssetManager';
+import { CollateralReserved, MintingExecuted, RedemptionPerformed, RedemptionDefault, RedemptionPaymentBlocked, RedemptionRejected } from '../generated/AssetManager/AssetManager';
 
 import { CollateralReservedEvent, FAssetEvent } from '../generated/schema';
 
@@ -85,6 +85,53 @@ export function handleRedemptionDefault(ev: RedemptionDefault): void {
   event.updated = ev.block.timestamp;
 
   log.info('[FAsset] Saving RedemptionDefault FAssetEvent with id: {}, user: {}, requestId: {}', [event.id, event.user, requestIdBigInt.toString()]);
+
+  event.save();
+}
+
+export function handleRedemptionPaymentBlocked(ev: RedemptionPaymentBlocked): void {
+  // Create FAssetEvent with transaction hash as id
+  let event = new FAssetEvent(ev.transaction.hash.toHexString());
+
+  // Set the user to the redeemer address
+  event.user = ev.params.redeemer.toHexString();
+
+  event.type = 'redeem';
+  event.status = 'RedemptionPaymentBlocked';
+
+  // Convert uint64 requestId to BigInt
+  let requestIdBigInt = BigInt.fromI32(0);
+  requestIdBigInt = BigInt.fromString(ev.params.requestId.toString());
+  event.redeemRequestId = requestIdBigInt;
+
+  event.redeemUnderlyingTxHash = ev.params.transactionHash.toHexString();
+  event.created = ev.block.timestamp;
+  event.updated = ev.block.timestamp;
+
+  log.info('[FAsset] Saving RedemptionPaymentBlocked FAssetEvent with id: {}, user: {}, requestId: {}', [event.id, event.user, requestIdBigInt.toString()]);
+
+  event.save();
+}
+
+export function handleRedemptionRejected(ev: RedemptionRejected): void {
+  // Create FAssetEvent with transaction hash as id
+  let event = new FAssetEvent(ev.transaction.hash.toHexString());
+
+  // Set the user to the redeemer address
+  event.user = ev.params.redeemer.toHexString();
+
+  event.type = 'redeem';
+  event.status = 'RedemptionRejected';
+
+  // Convert uint64 requestId to BigInt
+  let requestIdBigInt = BigInt.fromI32(0);
+  requestIdBigInt = BigInt.fromString(ev.params.requestId.toString());
+  event.redeemRequestId = requestIdBigInt;
+
+  event.created = ev.block.timestamp;
+  event.updated = ev.block.timestamp;
+
+  log.info('[FAsset] Saving RedemptionRejected FAssetEvent with id: {}, user: {}, requestId: {}', [event.id, event.user, requestIdBigInt.toString()]);
 
   event.save();
 }

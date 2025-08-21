@@ -11,7 +11,7 @@ dataSources:
       # address: '0x56728e46908fB6FcC5BCD2cc0c0F9BB91C3e4D34'
       address: '0xDeD50DA9C3492Bee44560a4B35cFe0e778F41eC5'
       abi: AssetManager
-      startBlock: 20841850
+      startBlock: 20938541
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -29,6 +29,10 @@ dataSources:
           handler: handleCollateralReserved
         - event: RedemptionPerformed(indexed address,indexed address,indexed uint256,bytes32,uint256,int256)
           handler: handleRedemptionPerformed
-        - event: RedemptionDefault(indexed address,indexed address,indexed uint64,uint256,uint256,uint256)
+        - event: RedemptionDefault(indexed address,indexed address,indexed uint256,uint256,uint256,uint256)
           handler: handleRedemptionDefault
+        - event: RedemptionPaymentBlocked(indexed address,indexed address,indexed uint256,bytes32,uint256,int256)
+          handler: handleRedemptionPaymentBlocked
+        - event: RedemptionRejected(indexed address,indexed address,indexed uint256,uint256)
+          handler: handleRedemptionRejected
       file: ./src/mapping.ts
